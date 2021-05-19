@@ -17,7 +17,7 @@
                                  "-a" "theorems/kikori"
                                  "-m" "kikori.server"
                                  "--aot"
-                                 "-v" "1.7.1-SNAPSHOT"]}
+                                 "-v" "1.7.1"]}
            :runner {:extra-deps {com.cognitect/test-runner {:git/url "https://github.com/cognitect-labs/test-runner",
                                                             :sha "f7ef16dc3b8332b0d77bc0274578ad5270fbfedd"}},
                     :main-opts ["-m"

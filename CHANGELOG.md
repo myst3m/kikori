@@ -1,4 +1,7 @@
 # Change Log
+## [1.7.1] - 2021-05-19
+ - Moved from gitlab to git hub
+ 
 ## [1.5.2-SNAPSHOT] - 2018-03-06
 ### Changed
  - Handled when libbluetooth.so is missing on Linux platform.

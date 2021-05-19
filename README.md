@@ -1,6 +1,6 @@
 # Kikori
 
-Last updated: 2021/03/11 20:44
+Last updated: 2021/05/19 18:30
 
 This software is a clojure library and server, designed and implemented for Groovy-IoT which can be purchased from Omiya Giken (http://www.omiya-giken.com)
 
@@ -16,19 +16,12 @@ By using this, users can control Groovy-IoT functions such as
  - Come with reference implementations for BME280, GPS and increasing more ...
  - Build once and be able to distribute to other OSes
 
-##### If you want to use without build,  you can download the binary package from the links below.
-### As of 2021/03/11, The binary file is very big, it stops to distribute binary here.
-
 If you are a Debian user, you can use this Debian package. Download and check the section __Run with config__ .
 That package has been confirmed to work on also Raspbian. It should work on Ubuntu.
 
-
-|package |stable | development|
-|--------|-------|------------|
-|Tarball|1.7.0 |1.7.1-SNAPSHOT|
-|Debian|1.7.0|1.7.1-SNAPSHOT|
 ---
 ## News
+- 2021-03-11: Released 1.7.1
 - 2021-03-11: SNAPSHOT 1.7.1
 - 2019-03-01: Released 1.5.1
 - 2019-02-28: Released 1.5.0
