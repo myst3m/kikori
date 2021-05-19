@@ -1,0 +1,29 @@
+#!/bin/bash
+
+case "$1" in
+    configure|reconfigure)
+	chown -R root.root /var/lib/kikori/
+	chown root.root /usr/bin/kikori
+	chmod +x /usr/bin/kikori
+	chown -R root.root /etc/kikori
+	chown -R root.root /usr/share/doc/kikori
+	chown root.root /usr/share/java/kikori*.jar
+	chown root.root /etc/udev/rules.d/99-hid.rules
+	chmod 644 /usr/share/java/kikori*.jar
+	chown -R kikori.kikori /var/log/kikori
+	
+
+	udevadm control -R
+	udevadm trigger
+	systemctl daemon-reload
+esac
+
+echo
+echo "Notes:"
+echo "  kikori is not configured so as to boot automatically by systemd."
+echo "  You should run the following systemctl command if you prefer to do."
+echo
+echo "  # systemctl enable kikori"
+echo
+
+exit 0

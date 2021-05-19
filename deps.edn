@@ -1,0 +1,62 @@
+{:paths ["src" "classes" "resources"],
+ :aliases {:jar {:extra-deps {pack/pack.alpha
+                              {:git/url "https://github.com/juxt/pack.alpha.git"
+                               :sha "a5d64ce2fe48f87445f35a2743a94ca9a2e3ca94"}}
+                 :main-opts ["-m" "mach.pack.alpha.skinny" "--no-libs"]}
+           ;;:uberjar
+           ;; {:extra-deps {seancorfield/depstar {:mvn/version "0.5.2"}},
+           ;;  :main-opts ["-m"
+           ;;              "hf.depstar.uberjar"
+           ;;              "kikori.jar"
+           ;;              "-C"
+           ;;              "-m"
+           ;;              "kikori.server"]}
+           ,
+           :build {:main-opts ["-m" "silvur.build"]}
+           :uberjar {:main-opts ["-m" "silvur.build" "uberjar"
+                                 "-a" "theorems/kikori"
+                                 "-m" "kikori.server"
+                                 "--aot"
+                                 "-v" "1.7.1-SNAPSHOT"]}
+           :runner {:extra-deps {com.cognitect/test-runner {:git/url "https://github.com/cognitect-labs/test-runner",
+                                                            :sha "f7ef16dc3b8332b0d77bc0274578ad5270fbfedd"}},
+                    :main-opts ["-m"
+                                "cognitect.test-runner"
+                                "-d"
+                                "test"]},
+           :test {:extra-deps {org.clojure/test.check {:mvn/version "0.10.0"}},
+                  :extra-paths ["test"]}}
+
+ :mvn/repos {"vendredi" {:url "https://repository.hellonico.info/repository/hellonico/"}}
+ 
+ :deps {org.clojure/clojure {:mvn/version "1.10.1"}
+        org.clojure/core.specs.alpha {:mvn/version "0.2.44"}
+        org.clojure/data.json {:mvn/version "0.2.6"}
+        org.clojure/core.async {:mvn/version "0.4.490"}
+        org.clojure/tools.cli {:mvn/version "0.4.1"}
+        net.java.dev.jna/jna {:mvn/version "4.5.2"}
+        com.taoensso/timbre {:mvn/version "5.1.0"}
+        theorems/silvur {:mvn/version "1.9.10"}
+        origami/origami {:mvn/version "4.5.0"}
+        http-kit {:mvn/version "2.5.0"}
+        hiccup {:mvn/version "1.0.5"}
+        instaparse {:mvn/version "1.4.10"}
+        purejavahidapi {:mvn/version "0.0.2"}
+        irmagician {:mvn/version "0.8.5"}
+        nrepl {:mvn/version "0.8.2"}
+        cider/cider-nrepl {:mvn/version "0.25.3"}
+        org.jline/jline {:mvn/version "3.9.0"}
+        net.mikera/imagez {:mvn/version "0.12.0"}
+        net.sf.cssbox/cssbox {:mvn/version "4.14"}
+        org.clojure/data.codec {:mvn/version "0.1.1"}
+        org.apache.xmlgraphics/batik-all {:mvn/version "1.10"}
+        com.github.hypfvieh/bluez-dbus {:mvn/version "0.1.1"}
+        com.fzakaria/slf4j-timbre {:mvn/version "0.3.12"}
+        stylefruits/gniazdo {:mvn/version "1.1.1"}
+        metosin/reitit {:mvn/version "0.5.11"}
+
+        incanter/incanter-core {:mvn/version "1.9.3" :provided "test"}
+        incanter/incanter-charts {:mvn/version "1.9.3" :provided "test"}}}
+
+;; Deploy
+;; mvn deploy:deploy-file -Dfile=irmagician.jar -DrepositoryId=clojars -Durl=https://clojars.org/repo -DpomFile=pom.xml

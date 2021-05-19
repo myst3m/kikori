@@ -1,0 +1,232 @@
+#!/bin/bash
+
+KIKORI_HOME=${KIKORI_HOME:-.}
+KIKORI_ENV_ROOT=~/.kikori
+
+## If IPv4 stack is preferred, add "-Djava.net.preferIPv4Stack=true"
+JVM_OPTS=""
+
+## Notes: This script is JUST made one to ease typing commands. It will be removed or changed.
+
+function usage 
+{
+    echo
+    echo "Usage: kikori [option] <sub-command>"
+    echo
+    echo "  sub-command:"
+    echo "    - setup"
+    echo "    - build"
+    echo "    - shell"
+    echo "    - server"
+    echo "    - package"
+    echo "    - run <script>"
+
+    echo
+    echo "  option:"
+    echo "    -h     : This Help"
+    echo "    -cp    : Class path to load core and modules"
+    echo
+    echo
+    echo "Examples: "
+    echo " - Boot shell without option. /etc/kikori/system.conf is used if it exists"
+    echo "        $ kikori server"
+    echo
+    echo " - Boot shell with your config."
+    echo "        $ kikori server your.conf"
+    echo
+    echo " - Boot shell simply"
+    echo "        $ kikori -cp target/kikori-0.8.0-SNAPSHOT.jar shell"    
+    echo
+    echo " - Run script with additional class path 'lib' to load module from here"
+    echo "        $ kikori -cp lib -cp target/kikori-0.8.0-SNAPSHOT.jar run examples/reference.clj"
+    echo
+}
+
+which java > /dev/null
+if [[  $? > 0 ]] ;then
+    echo
+    echo "No java command found"
+    echo
+    usage
+    exit 127
+fi
+
+if [[ -f "/etc/default/kikori" ]]; then
+    . "/etc/default/kikori"
+fi
+
+if [[ "x$CLASSPATH" = "x" ]]; then
+    extra_classpath="."
+else
+    extra_classpath=.:$CLASSPATH
+fi
+
+cp_give=0
+
+while true ; do
+    case "$1" in
+	-h) 
+	    usage;
+	    exit 0;
+	    ;;
+	-cp | -classpath)
+	    extra_classpath=$extra_classpath:$2
+	    shift 2 ;;
+	--)
+	    shift
+	    break ;;
+	*)
+	    break ;;
+    esac
+done
+
+auto_search_classpath=$(find . /usr/share/java -name 'kikori*.jar' | xargs  | sed -e 's; ;:;g')
+extra_classpath=${extra_classpath}:${auto_search_classpath}
+
+subcmd=$1
+
+BOOT_SCRIPT="${KIKORI_ENV_ROOT}/boot.sh"
+BOOT_CONFIG="build.boot"
+
+case "$1" in
+    shell|run)
+	shift 1
+	echo "CLASSPATH: ${extra_classpath}"
+	java ${JVM_OPTS} -cp $extra_classpath kikori.shell $@
+	;;
+    server)
+	shift 1
+	conf=""
+	if [[ -f "/etc/kikori/system.conf" ]]; then
+	    conf="/etc/kikori/system.conf"
+	fi
+	echo "CLASSPATH:   ${extra_classpath}"
+	java ${JVM_OPTS} -cp $extra_classpath kikori.server $@ ${conf}
+	;;    
+    build)
+	if [[ ! -f ${BOOT_SCRIPT} ]]; then
+	    echo "No ${BOOT_SCRIPT} found. Run 'kikori setup' first"
+	    exit 1;
+	fi
+
+	if [[ ! -f ${BOOT_CONFIG} ]]; then
+	    echo "No ${BOOT_CONFIG} found in the current directory"
+	    exit 1;
+	fi
+
+	bash ${BOOT_SCRIPT} build
+
+	;;
+    setup)
+	mkdir -p ~/.kikori
+	URL=https://github.com/boot-clj/boot-bin/releases/download/latest/boot.sh
+	echo "Download boot.sh"
+	    which wget > /dev/null
+	    if [[ $? = 0 ]]; then
+	    	wget ${URL} -O ${BOOT_SCRIPT}
+	    	bash ${BOOT_SCRIPT} 
+	    	exit 0
+	    fi
+	which curl > /dev/null
+	if [[ $? = 0 ]]; then
+	    curl ${URL} -L -o ${BOOT_SCRIPT}
+	    ## First setup
+	    bash ${BOOT_SCRIPT}
+	    exit 0
+	fi
+	
+	echo "Neither wget nor curl found to setup"
+	exit 127
+
+	    ;;
+    
+    package)
+	version=$(find target/ -name '*.jar' | sed -e 's;.*/kikori-\([0-9.A-Z-]*\)-standalone.jar;\1;g')
+	target=kikori-system-${version}
+	$0 build 
+	mkdir -p ${KIKORI_HOME}/${target}/modules
+	cp ${KIKORI_HOME}/LICENSE ${KIKORI_HOME}/${target}/
+	cp ${KIKORI_HOME}/README.md ${KIKORI_HOME}/${target}/	
+	cp ${KIKORI_HOME}/examples/reference.clj ${KIKORI_HOME}/${target}/system.clj
+	cp -r ${KIKORI_HOME}/examples/ ${KIKORI_HOME}/${target}/
+	cp -r ${KIKORI_HOME}/docs ${KIKORI_HOME}/${target}/
+	cp ${KIKORI_HOME}/target/kikori-*.jar ${KIKORI_HOME}/${target}
+	cp ${KIKORI_HOME}/kikori ${KIKORI_HOME}/${target}
+	cp ${KIKORI_HOME}/src/kikori/module/*.clj ${KIKORI_HOME}/${target}/modules
+
+	tar cvzf ${KIKORI_HOME}/${target}.tar.gz -C ${KIKORI_HOME} ${target}
+
+	;;
+    dist)
+	if [[ x$2 = "x" ]]; then
+	   echo "No scp target"
+	   exit 0
+	fi
+	version=$(cat build.boot   | sed -ne 's;(def version "\(.*\)");\1;gp')
+	target=kikori-system-${version}	
+	deb=kikori_${version}_all.deb
+	kikori package
+	scp ${KIKORI_HOME}/${target}.tar.gz $2
+	boot deb
+	scp ${KIKORI_HOME}/target/${deb} $2
+	kikori update-readme
+	;;
+
+    update-readme)
+	version=$(cat build.boot   | sed -ne 's;(def version "\(.*\)");\1;gp')
+
+	tar=kikori-system-${version}.tar.gz
+	deb=kikori_${version}_all.deb	
+
+	tar_hash=""
+	if [[ -f ${tar} ]]; then
+	    tar_hash=$(sha1sum ${tar} | awk '{print $1}')
+	fi
+
+	deb_hash=""
+	if [[ -f target/${deb} ]]; then
+            deb_hash=$(sha1sum target/${deb} | awk '{print $1}')
+	fi
+
+	if [[ ${version} =~ SNAPSHOT ]]; then
+	    tarball_command="/|[ \t]*Tarball/,/SHA1/ { 
+	    		     	s;|.*Tarball[ \t]*|[ \t]*\([^|]*\)[ \t]*|[ \t]*\([^|]*\)[ \t]*|;|Tarball|\1|[${version}](https://theorems.co/kikori/${tar})|;g
+				s;|.*SHA1[ \t]*|[ \t]*\([a-zA-Z0-9]*\)[ \t]*|[ \t]*\([a-zA-Z0-9]*\)[ \t]*|;|SHA1|\1|${tar_hash}|;g}"
+	    deb_command="/|[ \t]*Debian/,/SHA1/ { 
+	    	s;|.*Debian[ \t]*|[ \t]*\([^|]*\)[ \t]*|[ \t]*\([^|]*\)[ \t]*|;|Debian|\1|[${version}](https://theorems.co/kikori/${deb})|;g
+		s;|.*SHA1[ \t]*|[ \t]*\([a-zA-Z0-9]*\)[ \t]*|[ \t]*\([a-zA-Z0-9]*\)[ \t]*|;|SHA1|${deb_hash}|\2|;g}"
+	else
+	    tarball_command="/|[ \t]*Tarball/,/SHA1/ { 
+	    		     	s;|.*Tarball[ \t]*|[ \t]*\([^|]*\)[ \t]*|[ \t]*\([^|]*\)[ \t]*|;|Tarball|[${version}](https://theorems.co/kikori/${tar})|\2|;g
+				s;|.*SHA1[ \t]*|[ \t]*\([a-zA-Z0-9]*\)[ \t]*|[ \t]*\([a-zA-Z0-9]*\)[ \t]*|;|SHA1|${tar_hash}|\2|;g}"
+	    deb_command="/|[ \t]*Debian/,/SHA1/ { 
+	    	s;|.*Debian[ \t]*|[ \t]*\([^|]*\)[ \t]*|[ \t]*\([^|]*\)[ \t]*|;|Debian|[${version}](https://theorems.co/kikori/${deb})|\2|;g
+		s;|.*SHA1[ \t]*|[ \t]*\([a-zA-Z0-9]*\)[ \t]*|[ \t]*\([a-zA-Z0-9]*\)[ \t]*|;|SHA1|${deb_hash}|\2|;g}"
+	fi
+
+	
+	cp README.md README.md.bkup
+	datetime=$(date +"%Y/%m/%d %H:%M")
+	cat README.md | \
+	    sed -e "/Last updated:/s;.*;Last updated: ${datetime};g" | \
+	    sed -e "${tarball_command}" | \
+	    sed -e "${deb_command}" > README.md.tmp
+	mv README.md.tmp README.md
+	;;
+
+    test)
+	bash ${BOOT_SCRIPT} test
+	;;
+    clean|c)
+	rm -rf ~/.kikori
+	;;
+
+    exec|e)
+	shift
+	echo "$*" | netcat localhost 5555 | sed -e '$d'
+	;;
+    *)
+	usage
+	;;
+esac
+

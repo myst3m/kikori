@@ -1,0 +1,5 @@
+#/bin/bash
+
+useradd -M -s /usr/sbin/nologin  -G dialout,video,input -d /var/lib/kikori kikori > /dev/null 2>&1
+
+exit 0

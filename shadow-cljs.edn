@@ -1,0 +1,13 @@
+;; shadow-cljs configuration
+{:source-paths
+ ["src"]
+
+ :dependencies
+ [[reagent "1.0.0"]
+  [cljs-http "0.1.46"]]
+
+ ;; :dev-http {8080 "resources"}
+ :builds
+ {:app {:target :browser
+        :modules {:main {:init-fn axe.app/init}}
+        :output-dir "resources/js"}}}
